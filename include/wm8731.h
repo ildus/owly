@@ -2,6 +2,9 @@
 
 #include "codec.h"
 
+/* I2C configuration */
+#define CODEC_I2C_ADDR 0b0011010 /* CSB=0, should be 0011011 if CSB=1 */
+
 extern _Atomic unsigned samplecounter;
 extern _Atomic CodecIntSample peakIn;
 extern _Atomic CodecIntSample peakOut;

@@ -23,7 +23,7 @@ enum Effects {
     EFFECTS_COUNT
 };
 
-static enum Effects currentEffect = EFFECT_DELAY;
+static enum Effects currentEffect = EFFECT_NONE;
 static VibratoState vibratoState;
 static DelayState delayState;
 
@@ -102,7 +102,8 @@ static void process(const AudioBuffer* restrict in, AudioBuffer* restrict out)
 
 static void idleCallback()
 {
-    enum Effects selected = button(4) + (button(5) << 1);
+	/*enum Effects selected = button(4) + (button(5) << 1);*/
+	enum Effects selected = EFFECT_NONE;
     if (currentEffect != selected) {
         // Switch effects via silence, trying to avoid a pop. While
         // we're looping here the audio processing will continue in
@@ -120,8 +121,6 @@ int main()
             { .analog = true },
             { .analog = true },
             { .analog = true },
-            { .pullup = true },
-            { .pullup = true },
     };
 
     platformInit(knobConfig);

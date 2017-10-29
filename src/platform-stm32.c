@@ -7,6 +7,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/dma.h>
+#include <libopencm3/stm32/i2c.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencmsis/core_cm3.h>
 #include <unistd.h>
@@ -118,7 +119,7 @@ void platformInit(const KnobConfig* knobConfig)
     rcc_periph_clock_enable(RCC_GPIOA);
     rcc_periph_clock_enable(RCC_GPIOB);
     rcc_periph_clock_enable(RCC_GPIOC);
-    rcc_periph_clock_enable(RCC_SPI1);
+    rcc_periph_clock_enable(RCC_I2C2);
     rcc_periph_clock_enable(RCC_SPI2);
     rcc_periph_clock_enable(RCC_DMA1);
     rcc_periph_clock_enable(RCC_DMA2);

@@ -4,6 +4,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/spi.h>
+#include <libopencm3/stm32/i2c.h>
 #include <libopencm3/cm3/nvic.h>
 #include "platform.h"
 
@@ -32,20 +33,12 @@ static CodecProcess appProcess;
 
 static void codecWriteReg(unsigned reg, unsigned value)
 {
-    gpio_clear(GPIOA, GPIO4);
-    spi_send(SPI1, (reg << 9) | value);
-    while (!(SPI_SR(SPI1) & SPI_SR_TXE));
-    while (SPI_SR(SPI1) & SPI_SR_BSY);
+	uint8_t cmd[2];
 
-    for (int i = 0; i < 100; i++) {
-        __asm__("nop");
-    }
-
-    gpio_set(GPIOA, GPIO4);
-
-    for (int i = 0; i < 1000; i++) {
-        __asm__("nop");
-    }
+    /* Assemble 2-byte data in WM8731 format */
+    cmd[0] = ((reg << 1) & 0xFE) | ((reg >> 8) & 0x01);
+    cmd[1] = value & 0xFF;
+	i2c_transfer7(I2C2, CODEC_I2C_ADDR, cmd, 2, NULL, 0);
 }
 
 static void codecConfig()
@@ -78,6 +71,20 @@ void codedSetOutVolume(int voldB)
     codecWriteReg(0x02, 0x100 | (volume & 0x7f)); // Left headphone
 }
 
+static void codecInitI2C(void)
+{
+	i2c_reset(I2C2);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10 | GPIO11);
+    gpio_set_af(GPIOB, GPIO_AF4, GPIO10 | GPIO11);
+	i2c_peripheral_disable(I2C2);
+	i2c_enable_ack(I2C2);
+	i2c_set_dutycycle(I2C2, I2C_CCR_DUTY_DIV2);
+	/* HSI is at 8Mhz */
+	i2c_set_speed(I2C2, i2c_speed_sm_100k, 8);
+	//configure No-Stretch CR1 (only relevant in slave mode)
+	i2c_peripheral_enable(I2C2);
+}
+
 void codecInit(void)
 {
     memset(adcBuffer, 0xaa, sizeof(adcBuffer));
@@ -91,21 +98,7 @@ void codecInit(void)
     gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, GPIO12 | GPIO13 | GPIO15);
     gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO6);
 
-    // Set up SPI1
-    spi_reset(SPI1);
-
-    spi_init_master(SPI1, SPI_CR1_BAUDRATE_FPCLK_DIV_256, SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE,
-            SPI_CR1_CPHA_CLK_TRANSITION_2, SPI_CR1_DFF_16BIT, SPI_CR1_MSBFIRST);
-    spi_set_nss_high(SPI1);
-    spi_enable_software_slave_management(SPI1);
-    spi_enable(SPI1);
-
-    // SPI1 alternate function mapping, set CSB signal high output
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO5 | GPIO7);
-    gpio_set_af(GPIOA, GPIO_AF5, GPIO5 | GPIO7);
-    gpio_set(GPIOA, GPIO4);
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
-
+	codecInitI2C();
     codecConfig();
 
     // Set up I2S for 48kHz 16-bit stereo.
