@@ -2,3 +2,4 @@ tags
 cscope*
 /build
 /lib
+/libopencm3
