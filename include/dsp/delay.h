@@ -4,20 +4,22 @@
 
 #define DELAY_LINELEN (CODEC_SAMPLERATE/2)
 
-typedef struct {
-    CodecIntSample delayline_l[DELAY_LINELEN];
-    CodecIntSample delayline_r[DELAY_LINELEN];
-    float filteredLength;
-    size_t writepos;
-    size_t octaverPhase;
+typedef struct
+{
+	CodecIntSample delayline_l[DELAY_LINELEN];
+	CodecIntSample delayline_r[DELAY_LINELEN];
+	float filteredLength;
+	size_t writepos;
+	size_t octaverPhase;
 } DelayState;
 
-typedef struct {
-    float input;
-    float confusion;
-    float feedback;
-    float octaveMix;
-    float length;
+typedef struct
+{
+	float input;
+	float confusion;
+	float feedback;
+	float octaveMix;
+	float length;
 } DelayParams;
 
 /**
@@ -37,5 +39,5 @@ void initDelay(DelayState* state);
  * @param param Input parameters to the effect
  */
 void processDelay(const FloatAudioBuffer* restrict in,
-        FloatAudioBuffer* restrict out, DelayState* state,
-        const DelayParams* params);
+                  FloatAudioBuffer* restrict out, DelayState* state,
+                  const DelayParams* params);

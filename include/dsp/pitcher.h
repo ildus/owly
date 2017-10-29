@@ -6,17 +6,19 @@
 #define DELAY_LINE_LENGTH (CODEC_SAMPLERATE/25)
 #define SCAN_LENGTH (DELAY_LINE_LENGTH - 2)
 
-typedef struct {
-    CodecIntSample delayline_l[DELAY_LINE_LENGTH];
-    CodecIntSample delayline_r[DELAY_LINE_LENGTH];
-    size_t writepos;
-    float readphase[2];
+typedef struct
+{
+	CodecIntSample delayline_l[DELAY_LINE_LENGTH];
+	CodecIntSample delayline_r[DELAY_LINE_LENGTH];
+	size_t writepos;
+	float readphase[2];
 } PitcherState;
 
-typedef struct {
-    float speed;// RAMP(params->pedal, 0.0f, 1.0f);
-    float wet;// RAMP(params->knob1, 0.0f, 1.0f);
-    float phasediff;// RAMP(params->knob3, 0.0f, 0.02f);
+typedef struct
+{
+	float speed;// RAMP(params->pedal, 0.0f, 1.0f);
+	float wet;// RAMP(params->knob1, 0.0f, 1.0f);
+	float phasediff;// RAMP(params->knob3, 0.0f, 0.02f);
 } PitcherParams;
 
 /**
@@ -36,5 +38,5 @@ void initPitcher(PitcherState* state);
  * @param param Input parameters to the effect
  */
 void processPitcher(const FloatAudioBuffer* restrict in,
-        FloatAudioBuffer* restrict out, PitcherState* state,
-        const PitcherParams* params);
+                    FloatAudioBuffer* restrict out, PitcherState* state,
+                    const PitcherParams* params);

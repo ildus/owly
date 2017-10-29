@@ -21,19 +21,21 @@
 #define CLAMP(v, min, max) (v) > (max) ? (max) : ((v) < (min) ? (min) : (v))
 
 static inline void samplesToFloat(const AudioBuffer* restrict in,
-        FloatAudioBuffer* restrict out)
+                                  FloatAudioBuffer* restrict out)
 {
-    for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++) {
-        out->m[s] = in->m[s];
-    }
+	for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++)
+	{
+		out->m[s] = in->m[s];
+	}
 }
 
 static inline void floatToSamples(const FloatAudioBuffer* restrict in,
-        AudioBuffer* restrict out)
+                                  AudioBuffer* restrict out)
 {
-    for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++) {
-        out->m[s] = in->m[s];
-    }
+	for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++)
+	{
+		out->m[s] = in->m[s];
+	}
 }
 
 /**
@@ -42,12 +44,14 @@ static inline void floatToSamples(const FloatAudioBuffer* restrict in,
  */
 static inline bool willClip(const FloatAudioBuffer* restrict in)
 {
-    for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++) {
-        if (in->m[s] < INT16_MIN || in->m[s] > INT16_MAX) {
-            return true;
-        }
-    }
-    return false;
+	for (unsigned s = 0; s < 2 * CODEC_SAMPLES_PER_FRAME; s++)
+	{
+		if (in->m[s] < INT16_MIN || in->m[s] > INT16_MAX)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -55,11 +59,11 @@ static inline bool willClip(const FloatAudioBuffer* restrict in)
  */
 static inline float linterpolate(const CodecIntSample* table, unsigned tablelen, float pos)
 {
-    const unsigned intpos = (unsigned)pos;
-    const float s0 = table[intpos % tablelen];
-    const float s1 = table[(intpos + 1) % tablelen];
-    const float frac = pos - intpos;
-    return s0 * (1.0f - frac) + s1 * frac;
+	const unsigned intpos = (unsigned)pos;
+	const float s0 = table[intpos % tablelen];
+	const float s1 = table[(intpos + 1) % tablelen];
+	const float frac = pos - intpos;
+	return s0 * (1.0f - frac) + s1 * frac;
 }
 
 /**
@@ -67,9 +71,9 @@ static inline float linterpolate(const CodecIntSample* table, unsigned tablelen,
  */
 static inline float linterpolateFloat(const float* table, unsigned tablelen, float pos)
 {
-    const unsigned intpos = (unsigned)pos;
-    const float s0 = table[intpos % tablelen];
-    const float s1 = table[(intpos + 1) % tablelen];
-    const float frac = pos - intpos;
-    return s0 * (1.0f - frac) + s1 * frac;
+	const unsigned intpos = (unsigned)pos;
+	const float s0 = table[intpos % tablelen];
+	const float s1 = table[(intpos + 1) % tablelen];
+	const float frac = pos - intpos;
+	return s0 * (1.0f - frac) + s1 * frac;
 }

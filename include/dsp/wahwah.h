@@ -3,13 +3,15 @@
 #include "biquad.h"
 #include "codec.h"
 
-typedef struct {
-    FloatBiquadState bqstate;
+typedef struct
+{
+	FloatBiquadState bqstate;
 } WahwahState;
 
-typedef struct {
-    float wah; ///< peak, 0..1
-    float q; ///< resonance, 0..1
+typedef struct
+{
+	float wah; ///< peak, 0..1
+	float q; ///< resonance, 0..1
 } WahwahParams;
 
 /**
@@ -29,5 +31,5 @@ void initWahwah(WahwahState* state);
  * @param param Input parameters to the effect
  */
 void processWahwah(const FloatAudioBuffer* restrict in,
-        FloatAudioBuffer* restrict out, WahwahState* state,
-        const WahwahParams* params);
+                   FloatAudioBuffer* restrict out, WahwahState* state,
+                   const WahwahParams* params);

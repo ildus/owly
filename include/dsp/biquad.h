@@ -10,18 +10,20 @@
  *
  *  Where a0 has been normalized to 1.
  */
-typedef struct {
-    float gain;
-    float a1, a2; // poles
-    float b0, b1, b2; // zeros
+typedef struct
+{
+	float gain;
+	float a1, a2; // poles
+	float b0, b1, b2; // zeros
 } FloatBiquadCoeffs;
 
 /**
  * Stereo state for a biquad stage.
  */
-typedef struct {
-    float X[2][2];
-    float Y[2][2];
+typedef struct
+{
+	float X[2][2];
+	float Y[2][2];
 } FloatBiquadState;
 
 /**
@@ -44,4 +46,4 @@ void bqMakeBandpass(FloatBiquadCoeffs* c, float w0, float q);
  * Run a biquad filter
  */
 void bqProcess(const FloatAudioBuffer* restrict in, FloatAudioBuffer* restrict out,
-        const FloatBiquadCoeffs* c, FloatBiquadState* state);
+               const FloatBiquadCoeffs* c, FloatBiquadState* state);
