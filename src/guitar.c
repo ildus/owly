@@ -114,6 +114,7 @@ static void process(const AudioBuffer* restrict in, AudioBuffer* restrict out)
 static void idleCallback()
 {
 	/*enum Effects selected = button(4) + (button(5) << 1);*/
+	/*
 	enum Effects selected = EFFECT_NONE;
 	if (currentEffect != selected)
 	{
@@ -123,7 +124,7 @@ static void idleCallback()
 		currentEffect = EFFECT_QUIET;
 		for (unsigned i = 0; i < 100000; i++) __asm__("nop");
 		currentEffect = selected;
-	}
+	}*/
 }
 
 int main()

@@ -31,12 +31,35 @@ static int16_t adcBuffer[2][BUFFER_SAMPLES] __attribute__((aligned(4)));
 
 static CodecProcess appProcess;
 
-static void codecWriteReg(unsigned reg, unsigned value)
+static void codecInitI2C(void)
+{
+	i2c_reset(I2C2);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10 | GPIO11);
+	gpio_set_af(GPIOB, GPIO_AF4, GPIO10 | GPIO11);
+	gpio_set_output_options(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_25MHZ, GPIO10 | GPIO11);
+
+	rcc_periph_clock_enable(RCC_GPIOB);
+	rcc_periph_clock_enable(RCC_I2C2);
+	i2c_peripheral_disable(I2C2);
+	i2c_enable_ack(I2C2);
+	i2c_set_dutycycle(I2C2, I2C_CCR_DUTY_DIV2);
+	/* HSI is at 8Mhz */
+	i2c_set_speed(I2C2, i2c_speed_sm_100k, 8);
+	i2c_peripheral_enable(I2C2);
+}
+
+static void codecDisableI2C(void)
+{
+	i2c_peripheral_disable(I2C2);
+	rcc_periph_clock_disable(RCC_I2C2);
+}
+
+static void codecWriteReg(uint8_t reg, uint16_t value)
 {
 	uint8_t cmd[2];
 
 	/* Assemble 2-byte data in WM8731 format */
-	cmd[0] = ((reg << 1) & 0xFE) | ((reg >> 8) & 0x01);
+	cmd[0] = ((reg << 1) & 0xFE) | ((value >> 8) & 0x01);
 	cmd[1] = value & 0xFF;
 	i2c_transfer7(I2C2, CODEC_I2C_ADDR, cmd, 2, NULL, 0);
 }
@@ -69,20 +92,6 @@ void codedSetOutVolume(int voldB)
 	// -73 <= voldB <= 6
 	const unsigned volume = 121 + voldB;
 	codecWriteReg(0x02, 0x100 | (volume & 0x7f)); // Left headphone
-}
-
-static void codecInitI2C(void)
-{
-	i2c_reset(I2C2);
-	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10 | GPIO11);
-	gpio_set_af(GPIOB, GPIO_AF4, GPIO10 | GPIO11);
-	i2c_peripheral_disable(I2C2);
-	i2c_enable_ack(I2C2);
-	i2c_set_dutycycle(I2C2, I2C_CCR_DUTY_DIV2);
-	/* HSI is at 8Mhz */
-	i2c_set_speed(I2C2, i2c_speed_sm_100k, 8);
-	//configure No-Stretch CR1 (only relevant in slave mode)
-	i2c_peripheral_enable(I2C2);
 }
 
 void codecInit(void)

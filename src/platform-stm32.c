@@ -130,7 +130,6 @@ void platformInit(const KnobConfig* knobConfig)
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOC);
 	rcc_periph_clock_enable(RCC_GPIOD);
-	rcc_periph_clock_enable(RCC_I2C2);
 	rcc_periph_clock_enable(RCC_SPI2);
 	rcc_periph_clock_enable(RCC_DMA1);
 	rcc_periph_clock_enable(RCC_DMA2);
