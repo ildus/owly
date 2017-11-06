@@ -32,7 +32,7 @@ typedef struct
 typedef void(*CodecProcess)(const AudioBuffer* restrict in, AudioBuffer* restrict out);
 
 void codecRegisterProcessFunction(CodecProcess fn);
-void codedSetInVolume(int vol);
-void codedSetOutVolume(int voldB);
+void codecSetInVolume(int vol);
+void codecSetOutVolume(int voldB);
 
 #endif

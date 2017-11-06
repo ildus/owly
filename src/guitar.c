@@ -138,10 +138,8 @@ int main()
 	};
 
 	platformInit(knobConfig);
-	codedSetInVolume(5);
-	codedSetOutVolume(-20);
 
-	printf("Starting guitar board\n");
+	//printf("Starting guitar board\n");
 
 	platformRegisterIdleCallback(idleCallback);
 	codecRegisterProcessFunction(process);

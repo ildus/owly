@@ -48,12 +48,6 @@ static void codecInitI2C(void)
 	i2c_peripheral_enable(I2C2);
 }
 
-static void codecDisableI2C(void)
-{
-	i2c_peripheral_disable(I2C2);
-	rcc_periph_clock_disable(RCC_I2C2);
-}
-
 static void codecWriteReg(uint8_t reg, uint16_t value)
 {
 	uint8_t cmd[2];
@@ -67,27 +61,33 @@ static void codecWriteReg(uint8_t reg, uint16_t value)
 static void codecConfig()
 {
 	codecWriteReg(0x0f, 0b000000000); // Reset!
-	codedSetInVolume(0);
-	codedSetOutVolume(-10);
+	codecSetInVolume(0);
+	codecSetOutVolume(-10);
 	codecWriteReg(0x04, 0b000010010); // Analog path - select DAC, no bypass
 #ifdef WM8731_HIGHPASS
 	codecWriteReg(0x05, 0b000000000); // Digital path - disable soft mute
 #else
 	codecWriteReg(0x05, 0b000000001); // Digital path - disable soft mute and highpass
 #endif
-	codecWriteReg(0x06, 0b000000000); // Power down control - enable everything
+	codecWriteReg(0x06, 0b001000010); // Power down control - enable everything
 	codecWriteReg(0x07, 0b000000010); // Interface format - 16-bit I2S
+	codecWriteReg(0x08, 0b000000001); // USB sampling rate, 48x48, on 12Mhz
 	codecWriteReg(0x09, 0b000000001); // Active control - engage!
+
+	codecSetInVolume(5);
+	codecSetOutVolume(-10);
+	i2c_reset(I2C2);
+	i2c_peripheral_disable(I2C2);
 }
 
-void codedSetInVolume(int vol)
+void codecSetInVolume(int vol)
 {
 	// -23 <= vol <= 8
 	const unsigned involume = 0x17 + vol;
 	codecWriteReg(0x00, 0x100 | (involume & 0x1f)); // Left line in, unmute
 }
 
-void codedSetOutVolume(int voldB)
+void codecSetOutVolume(int voldB)
 {
 	// -73 <= voldB <= 6
 	const unsigned volume = 121 + voldB;
@@ -105,7 +105,7 @@ void codecInit(void)
 	gpio_mode_setup(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO6);
 	gpio_set_af(GPIOC, GPIO_AF5, GPIO6); // MCLK
 	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, GPIO12 | GPIO13 | GPIO15);
-	gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO6);
+	gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, GPIO6);
 
 	codecInitI2C();
 	codecConfig();
@@ -115,13 +115,13 @@ void codecInit(void)
 	// table 126 in the data sheet.
 	//
 	// This gives us 1.536MHz SCLK = 16 bits * 2 channels * 48000 Hz
-	// and 12.288 MHz MCLK = 256 * 48000 Hz.
+	// and 12.000 MHz MCLK = 250 * 48000 Hz.
 	// With this PLL configuration the actual sampling frequency
 	// is nominally 47991 Hz.
 
 	spi_reset(SPI2);
 
-	RCC_PLLI2SCFGR = (3 << 28) | (258 << 6);
+	RCC_PLLI2SCFGR = (3 << 28) | (250 << 6);
 	RCC_CR |= RCC_CR_PLLI2SON;
 	while (!(RCC_CR & RCC_CR_PLLI2SRDY));
 
@@ -146,11 +146,11 @@ void codecInit(void)
 	dma_enable_double_buffer_mode(DMA1, DAC_DMA_STREAM);
 	dma_enable_stream(DMA1, DAC_DMA_STREAM);
 
-	// Configure the DMA engine to stream data from the ADC.
+	/* Configure the DMA engine to stream data from the ADC. */
 	dma_stream_reset(DMA1, ADC_DMA_STREAM);
 	dma_set_peripheral_address(DMA1, ADC_DMA_STREAM, (intptr_t)&SPI_DR(I2S2_EXT_BASE));
-	dma_set_memory_address(DMA1, ADC_DMA_STREAM, (intptr_t)adcBuffer[0]);
-	dma_set_memory_address_1(DMA1, ADC_DMA_STREAM, (intptr_t)adcBuffer[1]);
+	dma_set_memory_address(DMA1, ADC_DMA_STREAM, (intptr_t) adcBuffer[0]);
+	dma_set_memory_address_1(DMA1, ADC_DMA_STREAM, (intptr_t) adcBuffer[1]);
 	dma_set_number_of_data(DMA1, ADC_DMA_STREAM, BUFFER_SAMPLES);
 	dma_channel_select(DMA1, ADC_DMA_STREAM, ADC_DMA_CHANNEL);
 	dma_set_transfer_mode(DMA1, ADC_DMA_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
