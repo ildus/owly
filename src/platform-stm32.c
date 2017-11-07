@@ -42,8 +42,8 @@ static const KnobConfig defaultKnobConfig[KNOB_COUNT] =
 	{ .analog = true },
 };
 
-static const uint32_t ADC_DMA_STREAM = DMA_STREAM0;
-static const uint32_t ADC_DMA_CHANNEL = DMA_SxCR_CHSEL_0;
+static const uint32_t ADC_DMA_KNOBS_STREAM = DMA_STREAM0;
+static const uint32_t ADC_DMA_KNOBS_CHANNEL = DMA_SxCR_CHSEL_0;
 
 static volatile uint16_t adcSamples[ADC_PINS]; // 12-bit value
 static volatile uint16_t adcValues[ADC_PINS]; // 16-bit value
@@ -55,6 +55,7 @@ static void adcInit(const KnobConfig* knobConfig)
 	// Set up analog input pins and build a channel list
 	uint8_t channels[ADC_PINS];
 	size_t channelCount = 0;
+
 	for (size_t i = 0; i < KNOB_COUNT; i++)
 	{
 		if (knobConfig[i].analog)
@@ -65,9 +66,7 @@ static void adcInit(const KnobConfig* knobConfig)
 	}
 
 	if (channelCount == 0)
-	{
 		return;
-	}
 
 	adc_power_off(ADC1);
 	adc_enable_scan_mode(ADC1);
@@ -77,18 +76,18 @@ static void adcInit(const KnobConfig* knobConfig)
 
 	adc_set_regular_sequence(ADC1, channelCount, channels);
 
-	// Configure the DMA engine to stream data from the ADC.
-	dma_stream_reset(DMA1, ADC_DMA_STREAM);
-	dma_set_peripheral_address(DMA2, ADC_DMA_STREAM, (intptr_t)&ADC_DR(ADC1));
-	dma_set_memory_address(DMA2, ADC_DMA_STREAM, (intptr_t)adcSamples);
-	dma_set_number_of_data(DMA2, ADC_DMA_STREAM, channelCount);
-	dma_channel_select(DMA2, ADC_DMA_STREAM, ADC_DMA_CHANNEL);
-	dma_set_transfer_mode(DMA2, ADC_DMA_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
-	dma_set_memory_size(DMA2, ADC_DMA_STREAM, DMA_SxCR_MSIZE_16BIT);
-	dma_set_peripheral_size(DMA2, ADC_DMA_STREAM, DMA_SxCR_PSIZE_16BIT);
-	dma_enable_memory_increment_mode(DMA2, ADC_DMA_STREAM);
-	dma_enable_circular_mode(DMA2, ADC_DMA_STREAM);
-	dma_enable_stream(DMA2, ADC_DMA_STREAM);
+	// Configure the DMA ddngine to stream data from the ADC.
+	dma_stream_reset(DMA1, ADC_DMA_KNOBS_STREAM);
+	dma_set_peripheral_address(DMA2, ADC_DMA_KNOBS_STREAM, (intptr_t)&ADC_DR(ADC1));
+	dma_set_memory_address(DMA2, ADC_DMA_KNOBS_STREAM, (intptr_t)adcSamples);
+	dma_set_number_of_data(DMA2, ADC_DMA_KNOBS_STREAM, channelCount);
+	dma_channel_select(DMA2, ADC_DMA_KNOBS_STREAM, ADC_DMA_KNOBS_CHANNEL);
+	dma_set_transfer_mode(DMA2, ADC_DMA_KNOBS_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
+	dma_set_memory_size(DMA2, ADC_DMA_KNOBS_STREAM, DMA_SxCR_MSIZE_16BIT);
+	dma_set_peripheral_size(DMA2, ADC_DMA_KNOBS_STREAM, DMA_SxCR_PSIZE_16BIT);
+	dma_enable_memory_increment_mode(DMA2, ADC_DMA_KNOBS_STREAM);
+	dma_enable_circular_mode(DMA2, ADC_DMA_KNOBS_STREAM);
+	dma_enable_stream(DMA2, ADC_DMA_KNOBS_STREAM);
 
 	adc_set_dma_continue(ADC1);
 	adc_set_continuous_conversion_mode(ADC1);

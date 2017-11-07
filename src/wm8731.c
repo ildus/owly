@@ -11,19 +11,14 @@
 #include <stdint.h>
 #include <string.h>
 
-/// If WM8731_HIGHPASS is defined the codec is configured to remove
-/// DC bias automatically, otherwise it's done in software. The noise
-/// characteristics are different.
-//#define WM8731_HIGHPASS
-
 _Atomic unsigned samplecounter;
 _Atomic CodecIntSample peakIn = INT16_MIN;
 _Atomic CodecIntSample peakOut = INT16_MIN;
 
-static const uint32_t DAC_DMA_STREAM = DMA_STREAM4; // SPI2_TX
-static const uint32_t DAC_DMA_CHANNEL = DMA_SxCR_CHSEL_0;
-static const uint32_t ADC_DMA_STREAM = DMA_STREAM3; // I2S2_EXT_RX
-static const uint32_t ADC_DMA_CHANNEL = DMA_SxCR_CHSEL_3;
+static const uint32_t DAC_DMA_I2S_STREAM = DMA_STREAM4; // SPI2_TX
+static const uint32_t DAC_DMA_I2S_CHANNEL = DMA_SxCR_CHSEL_0;
+static const uint32_t ADC_DMA_I2S_STREAM = DMA_STREAM3; // I2S2_EXT_RX
+static const uint32_t ADC_DMA_I2S_CHANNEL = DMA_SxCR_CHSEL_3;
 
 #define BUFFER_SAMPLES ((CODEC_SAMPLES_PER_FRAME)*2)
 static int16_t dacBuffer[2][BUFFER_SAMPLES] __attribute__((aligned(4)));
@@ -64,11 +59,7 @@ static void codecConfig()
 	codecSetInVolume(0);
 	codecSetOutVolume(-10);
 	codecWriteReg(0x04, 0b000010010); // Analog path - select DAC, no bypass
-#ifdef WM8731_HIGHPASS
-	codecWriteReg(0x05, 0b000000000); // Digital path - disable soft mute
-#else
 	codecWriteReg(0x05, 0b000000001); // Digital path - disable soft mute and highpass
-#endif
 	codecWriteReg(0x06, 0b001000010); // Power down control - enable everything
 	codecWriteReg(0x07, 0b000000010); // Interface format - 16-bit I2S
 	codecWriteReg(0x08, 0b000000001); // USB sampling rate, 48x48, on 12Mhz
@@ -133,34 +124,34 @@ void codecInit(void)
 	                             (SPI_I2SCFGR_I2SCFG_SLAVE_RECEIVE << SPI_I2SCFGR_I2SCFG_LSB);
 
 	// Configure the DMA engine to stream data to the DAC.
-	dma_stream_reset(DMA1, DAC_DMA_STREAM);
-	dma_set_peripheral_address(DMA1, DAC_DMA_STREAM, (intptr_t)&SPI_DR(SPI2));
-	dma_set_memory_address(DMA1, DAC_DMA_STREAM, (intptr_t)dacBuffer[0]);
-	dma_set_memory_address_1(DMA1, DAC_DMA_STREAM, (intptr_t)dacBuffer[1]);
-	dma_set_number_of_data(DMA1, DAC_DMA_STREAM, BUFFER_SAMPLES);
-	dma_channel_select(DMA1, DAC_DMA_STREAM, DAC_DMA_CHANNEL);
-	dma_set_transfer_mode(DMA1, DAC_DMA_STREAM, DMA_SxCR_DIR_MEM_TO_PERIPHERAL);
-	dma_set_memory_size(DMA1, DAC_DMA_STREAM, DMA_SxCR_MSIZE_16BIT);
-	dma_set_peripheral_size(DMA1, DAC_DMA_STREAM, DMA_SxCR_PSIZE_16BIT);
-	dma_enable_memory_increment_mode(DMA1, DAC_DMA_STREAM);
-	dma_enable_double_buffer_mode(DMA1, DAC_DMA_STREAM);
-	dma_enable_stream(DMA1, DAC_DMA_STREAM);
+	dma_stream_reset(DMA1, DAC_DMA_I2S_STREAM);
+	dma_set_peripheral_address(DMA1, DAC_DMA_I2S_STREAM, (intptr_t)&SPI_DR(SPI2));
+	dma_set_memory_address(DMA1, DAC_DMA_I2S_STREAM, (intptr_t)dacBuffer[0]);
+	dma_set_memory_address_1(DMA1, DAC_DMA_I2S_STREAM, (intptr_t)dacBuffer[1]);
+	dma_set_number_of_data(DMA1, DAC_DMA_I2S_STREAM, BUFFER_SAMPLES);
+	dma_channel_select(DMA1, DAC_DMA_I2S_STREAM, DAC_DMA_I2S_CHANNEL);
+	dma_set_transfer_mode(DMA1, DAC_DMA_I2S_STREAM, DMA_SxCR_DIR_MEM_TO_PERIPHERAL);
+	dma_set_memory_size(DMA1, DAC_DMA_I2S_STREAM, DMA_SxCR_MSIZE_16BIT);
+	dma_set_peripheral_size(DMA1, DAC_DMA_I2S_STREAM, DMA_SxCR_PSIZE_16BIT);
+	dma_enable_memory_increment_mode(DMA1, DAC_DMA_I2S_STREAM);
+	dma_enable_double_buffer_mode(DMA1, DAC_DMA_I2S_STREAM);
+	dma_enable_stream(DMA1, DAC_DMA_I2S_STREAM);
 
 	/* Configure the DMA engine to stream data from the ADC. */
-	dma_stream_reset(DMA1, ADC_DMA_STREAM);
-	dma_set_peripheral_address(DMA1, ADC_DMA_STREAM, (intptr_t)&SPI_DR(I2S2_EXT_BASE));
-	dma_set_memory_address(DMA1, ADC_DMA_STREAM, (intptr_t) adcBuffer[0]);
-	dma_set_memory_address_1(DMA1, ADC_DMA_STREAM, (intptr_t) adcBuffer[1]);
-	dma_set_number_of_data(DMA1, ADC_DMA_STREAM, BUFFER_SAMPLES);
-	dma_channel_select(DMA1, ADC_DMA_STREAM, ADC_DMA_CHANNEL);
-	dma_set_transfer_mode(DMA1, ADC_DMA_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
-	dma_set_memory_size(DMA1, ADC_DMA_STREAM, DMA_SxCR_MSIZE_16BIT);
-	dma_set_peripheral_size(DMA1, ADC_DMA_STREAM, DMA_SxCR_PSIZE_16BIT);
-	dma_enable_memory_increment_mode(DMA1, ADC_DMA_STREAM);
-	dma_enable_double_buffer_mode(DMA1, ADC_DMA_STREAM);
-	dma_enable_stream(DMA1, ADC_DMA_STREAM);
+	dma_stream_reset(DMA1, ADC_DMA_I2S_STREAM);
+	dma_set_peripheral_address(DMA1, ADC_DMA_I2S_STREAM, (intptr_t)&SPI_DR(I2S2_EXT_BASE));
+	dma_set_memory_address(DMA1, ADC_DMA_I2S_STREAM, (intptr_t) adcBuffer[0]);
+	dma_set_memory_address_1(DMA1, ADC_DMA_I2S_STREAM, (intptr_t) adcBuffer[1]);
+	dma_set_number_of_data(DMA1, ADC_DMA_I2S_STREAM, BUFFER_SAMPLES);
+	dma_channel_select(DMA1, ADC_DMA_I2S_STREAM, ADC_DMA_I2S_CHANNEL);
+	dma_set_transfer_mode(DMA1, ADC_DMA_I2S_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
+	dma_set_memory_size(DMA1, ADC_DMA_I2S_STREAM, DMA_SxCR_MSIZE_16BIT);
+	dma_set_peripheral_size(DMA1, ADC_DMA_I2S_STREAM, DMA_SxCR_PSIZE_16BIT);
+	dma_enable_memory_increment_mode(DMA1, ADC_DMA_I2S_STREAM);
+	dma_enable_double_buffer_mode(DMA1, ADC_DMA_I2S_STREAM);
+	dma_enable_stream(DMA1, ADC_DMA_I2S_STREAM);
 
-	dma_enable_transfer_complete_interrupt(DMA1, ADC_DMA_STREAM);
+	dma_enable_transfer_complete_interrupt(DMA1, ADC_DMA_I2S_STREAM);
 	nvic_enable_irq(NVIC_DMA1_STREAM3_IRQ);
 	nvic_set_priority(NVIC_DMA1_STREAM3_IRQ, 0x80); // 0 is most urgent
 
@@ -171,16 +162,16 @@ void codecInit(void)
 
 void dma1_stream3_isr(void)
 {
-	dma_clear_interrupt_flags(DMA1, ADC_DMA_STREAM, DMA_TCIF);
+	dma_clear_interrupt_flags(DMA1, ADC_DMA_I2S_STREAM, DMA_TCIF);
 
-	AudioBuffer* outBuffer = dma_get_target(DMA1, DAC_DMA_STREAM) ?
+	AudioBuffer* outBuffer = dma_get_target(DMA1, DAC_DMA_I2S_STREAM) ?
 	                         (void*)dacBuffer[0] :
 	                         (void*)dacBuffer[1];
-	AudioBuffer* inBuffer = dma_get_target(DMA1, DAC_DMA_STREAM) ?
+	AudioBuffer* inBuffer = dma_get_target(DMA1, ADC_DMA_I2S_STREAM) ?
 	                        (void*)adcBuffer[0] :
 	                        (void*)adcBuffer[1];
 
-#ifndef WM8731_HIGHPASS
+#ifdef WM8731_HIGHPASS
 	// Correct DC offset
 	static int32_t correction[2] = { 1230 << 16, 1230 << 16 };
 	int average[2] = {};
@@ -196,13 +187,12 @@ void dma1_stream3_isr(void)
 #endif
 
 	if (appProcess)
-	{
-		appProcess((const AudioBuffer*)inBuffer, (AudioBuffer*)outBuffer);
-	}
+		appProcess((const AudioBuffer*) inBuffer, (AudioBuffer*) outBuffer);
 
 	samplecounter += CODEC_SAMPLES_PER_FRAME;
 	CodecIntSample framePeakOut = INT16_MIN;
 	CodecIntSample framePeakIn = INT16_MIN;
+
 	for (unsigned s = 0; s < BUFFER_SAMPLES; s++)
 	{
 		if (outBuffer->m[s] > framePeakOut)
@@ -231,13 +221,13 @@ void codecPeek(const int16_t** buffer, unsigned* buffersamples, unsigned* writep
 	*buffersamples = 2*BUFFER_SAMPLES;
 	*buffer = adcBuffer[0];
 
-	unsigned target = dma_get_target(DMA1, ADC_DMA_STREAM);
-	unsigned numberOfData = DMA_SNDTR(DMA1, ADC_DMA_STREAM);
+	unsigned target = dma_get_target(DMA1, ADC_DMA_I2S_STREAM);
+	unsigned numberOfData = DMA_SNDTR(DMA1, ADC_DMA_I2S_STREAM);
 
-	if (target != dma_get_target(DMA1, ADC_DMA_STREAM))
+	if (target != dma_get_target(DMA1, ADC_DMA_I2S_STREAM))
 	{
-		target = dma_get_target(DMA1, ADC_DMA_STREAM);
-		numberOfData = DMA_SNDTR(DMA1, ADC_DMA_STREAM);
+		target = dma_get_target(DMA1, ADC_DMA_I2S_STREAM);
+		numberOfData = DMA_SNDTR(DMA1, ADC_DMA_I2S_STREAM);
 	}
 
 	*writepos = (target ? BUFFER_SAMPLES : 0) + (BUFFER_SAMPLES - numberOfData);
